@@ -2,14 +2,14 @@ BINARYDIR := bin
 
 all: clean vendor build 
 .PHONY: all
-build: WHAT ?= ./cmd/...
 build: 
 	$(shell if [ ! -e $(BINARYDIR) ];then mkdir -p $(BINARYDIR); fi)
-	go build -o bin $(WHAT)
+	go build -o bin/ocm-controlplane main.go
+	$(shell ./hack/build.sh)
 .PHONY: build
 
 clean:
-	rm -rf bin .ocmconf
+	rm -rf bin .ocmconfig apiserver.local.config 
 .PHONY: clean
 
 vendor: 
