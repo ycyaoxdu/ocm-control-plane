@@ -25,16 +25,10 @@ type ExtraConfig struct {
 // Config defines the config for the apiserver
 type Config struct {
 	GenericConfig *genericapiserver.RecommendedConfig
-	// EmbeddedEtcd  EmbeddedEtcd
-
-	// ExtraConfig ExtraConfig
 }
 
 type completedConfig struct {
 	GenericConfig genericapiserver.CompletedConfig
-	// EmbeddedEtcd  EmbeddedEtcd
-
-	// ExtraConfig ExtraConfig
 }
 
 // CompletedConfig embeds a private pointer that cannot be instantiated outside of this package.
@@ -47,13 +41,9 @@ type Server struct {
 	GenericAPIServer *genericapiserver.GenericAPIServer
 }
 
-func New(cfg *genericapiserver.RecommendedConfig, dir string) *Config {
+func New(cfg *genericapiserver.RecommendedConfig) *Config {
 	return &Config{
 		GenericConfig: cfg,
-		// EmbeddedEtcd:  *NewEmbeddedEtcd(),
-		// ExtraConfig: ExtraConfig{
-		// 	RootDirectory: dir,
-		// },
 	}
 }
 
@@ -61,8 +51,6 @@ func New(cfg *genericapiserver.RecommendedConfig, dir string) *Config {
 func (cfg *Config) Complete() CompletedConfig {
 	c := completedConfig{
 		GenericConfig: cfg.GenericConfig.Complete(),
-		// EmbeddedEtcd:  cfg.EmbeddedEtcd,
-		// ExtraConfig:   cfg.ExtraConfig,
 	}
 
 	c.GenericConfig.Version = &version.Info{
