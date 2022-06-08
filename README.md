@@ -1,7 +1,7 @@
 # Get Started
 
 ```
-$ cd OCM-control-plane
+$ cd ocm-control-plane
 # clean environment, build binary
 $ make all
 # run 

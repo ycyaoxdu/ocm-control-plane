@@ -176,7 +176,7 @@ func (o CompeletedServerOptions) RunServer(ctx context.Context) error {
 		return err
 	}
 
-	// server.GenericAPIServer.AddPostStartHookOrDie("start-OCM-api-server-informers", func(context genericapiserver.PostStartHookContext) error {
+	// server.GenericAPIServer.AddPostStartHookOrDie("start-ocm-api-server-informers", func(context genericapiserver.PostStartHookContext) error {
 	// 	config.GenericConfig.SharedInformerFactory.Start(context.StopCh)
 	// 	// o.SharedInformerFactory.Start(context.StopCh)
 	// 	return nil
