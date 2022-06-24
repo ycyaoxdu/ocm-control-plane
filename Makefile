@@ -1,15 +1,19 @@
 BINARYDIR := bin
 
-all: clean vendor build 
+all: clean vendor build run
 .PHONY: all
+
+run:
+	$(shell hack/local-up-cluster.sh)
+.PHONY: run
+
 build: 
 	$(shell if [ ! -e $(BINARYDIR) ];then mkdir -p $(BINARYDIR); fi)
-	go build -o bin/ocm-controlplane main.go
-	$(shell ./hack/build.sh)
+	go build -o bin/ocm-controlplane main.go 
 .PHONY: build
 
 clean:
-	rm -rf bin .ocmconfig apiserver.local.config 
+	rm -rf bin .ocmconfig
 .PHONY: clean
 
 vendor: 

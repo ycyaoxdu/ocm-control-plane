@@ -21,9 +21,8 @@ go.work
 bin/
 
 # Config Files
-.ocmconfig/
-apiserver.local.config/
-default.etcd/
+.ocm/
+.ocmconfig/ 
 
 # IDE config
 .vscode/
