@@ -3,8 +3,7 @@
 
 KUBE_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
 # Usage: `hack/local-up-cluster.sh`.
-# set runtime config to disable some apis 
-RUNTIME_CONFIG=${RUNTIME_CONFIG:-"apps/v1=false,autoscaling/v2=false,batch/v1=false,events.k8s.io/v1=false,flowcontrol.apiserver.k8s.io/v1beta2=false,networking.k8s.io/v1=false,node.k8s.io/v1=false,policy/v1=false,scheduling.k8s.io/v1=false,storage.k8s.io/v1=false"}
+
 ### Allow user to supply the source directory.
 GO_OUT=${GO_OUT:-"${KUBE_ROOT}/bin"}
 #  set log lovel to 7
@@ -12,7 +11,8 @@ LOG_LEVEL=${LOG_LEVEL:-7}
 # This is the default dir and filename where the apiserver will generate a self-signed cert
 # which should be able to be used as the CA to verify itself
 CERT_DIR=${CERT_DIR:-"${KUBE_ROOT}/.ocmconfig/cert"}
-
+# set runtime config to disable some apis 
+RUNTIME_CONFIG=${RUNTIME_CONFIG:-""}
 
 
 DOCKER_OPTS=${DOCKER_OPTS:-""}
