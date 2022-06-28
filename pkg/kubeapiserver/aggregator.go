@@ -20,6 +20,7 @@ limitations under the License.
 package kubeapiserver
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"strings"
@@ -28,6 +29,7 @@ import (
 	"k8s.io/klog/v2"
 
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	apiextensionsinformers "k8s.io/apiextensions-apiserver/pkg/client/informers/externalversions"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -39,6 +41,7 @@ import (
 	"k8s.io/apiserver/pkg/server/healthz"
 	genericoptions "k8s.io/apiserver/pkg/server/options"
 	utilfeature "k8s.io/apiserver/pkg/util/feature"
+	"k8s.io/client-go/dynamic"
 	kubeexternalinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/tools/cache"
 	v1 "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1"
@@ -51,6 +54,8 @@ import (
 	"k8s.io/kube-aggregator/pkg/controllers/autoregister"
 	"k8s.io/kubernetes/cmd/kube-apiserver/app/options"
 	"k8s.io/kubernetes/pkg/controlplane/controller/crdregistration"
+
+	ocmcrds "open-cluster-management.io/ocm-controlplane/config/crds"
 )
 
 func createAggregatorConfig(
@@ -165,6 +170,36 @@ func createAggregatorServer(aggregatorConfig *aggregatorapiserver.Config, delega
 			aggregatorServer.APIRegistrationInformers.Apiregistration().V1().APIServices(),
 		),
 	)
+	if err != nil {
+		return nil, err
+	}
+
+	// Setup apiextensions client
+	apiextensionsClient, err := apiextensionsclient.NewForConfig(aggregatorConfig.GenericConfig.LoopbackClientConfig)
+	if err != nil {
+		return nil, err
+	}
+	// Setup dynamic client
+	dynamicClient, err := dynamic.NewForConfig(aggregatorConfig.GenericConfig.LoopbackClientConfig)
+	if err != nil {
+		return nil, err
+	}
+	// Add PostStartHook to install ocm crds
+	err = aggregatorServer.GenericAPIServer.AddPostStartHook("ocm-controlplane-crd-registration", func(context genericapiserver.PostStartHookContext) error {
+		// bootstrap ocm crd
+		if err := ocmcrds.Bootstrap(
+			goContext(context),
+			apiextensionsClient,
+			apiextensionsClient.Discovery(),
+			dynamicClient,
+		); err != nil {
+			klog.Errorf("failed to bootstrap ocm CRDs: %v", err)
+			// nolint:nilerr
+			return nil // don't klog.Fatal. This only happens when context is cancelled.
+		}
+		klog.Infof("Finished bootstrapping ocm CRDs")
+		return nil
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -313,4 +348,16 @@ func apiServicesToRegister(delegateAPIServer genericapiserver.DelegationTarget, 
 	}
 
 	return apiServices
+}
+
+// goContext turns the PostStartHookContext into a context.Context for use in routines that may or may not
+// run inside of a post-start-hook. The k8s APIServer wrote the post-start-hook context code before contexts
+// were part of the Go stdlib.
+func goContext(parent genericapiserver.PostStartHookContext) context.Context {
+	ctx, cancel := context.WithCancel(context.Background())
+	go func(done <-chan struct{}) {
+		<-done
+		cancel()
+	}(parent.StopCh)
+	return ctx
 }
