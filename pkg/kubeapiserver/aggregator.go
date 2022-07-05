@@ -1,22 +1,3 @@
-/*
-Copyright 2017 The Kubernetes Authors.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
-
-// package kubeapiserver does all of the work necessary to create a Kubernetes
-// APIServer by binding together the API, master and APIServer infrastructure.
-// It can be configured and called directly or via the hyperkube framework.
 package kubeapiserver
 
 import (
@@ -43,6 +24,7 @@ import (
 	utilfeature "k8s.io/apiserver/pkg/util/feature"
 	"k8s.io/client-go/dynamic"
 	kubeexternalinformers "k8s.io/client-go/informers"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 	v1 "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1"
 	v1helper "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1/helper"
@@ -56,6 +38,7 @@ import (
 	"k8s.io/kubernetes/pkg/controlplane/controller/crdregistration"
 
 	ocmcrds "open-cluster-management.io/ocm-controlplane/config/crds"
+	ocmresources "open-cluster-management.io/ocm-controlplane/config/hub"
 )
 
 func createAggregatorConfig(
@@ -203,6 +186,52 @@ func createAggregatorServer(aggregatorConfig *aggregatorapiserver.Config, delega
 	if err != nil {
 		return nil, err
 	}
+
+	// Setup kubenetes client
+	kubeClient, err := kubernetes.NewForConfig(aggregatorConfig.GenericConfig.LoopbackClientConfig)
+	if err != nil {
+		return nil, err
+	}
+	// Add PostStartHook to install ocm hub resources
+	err = aggregatorServer.GenericAPIServer.AddPostStartHook("ocm-controlplane-registration-resource", func(context genericapiserver.PostStartHookContext) error {
+		// bootstrap ocm hub resources
+		if err := ocmresources.Bootstrap(
+			goContext(context),
+			apiextensionsClient.Discovery(),
+			dynamicClient,
+			kubeClient,
+		); err != nil {
+			klog.Errorf("failed to bootstrap ocm hub resources: %v", err)
+			// nolint:nilerr
+			return nil // don't klog.Fatal. This only happens when context is cancelled.
+		}
+		klog.Infof("Finished bootstrapping ocm hub resources")
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// Add PostStartHook to install ocm controllers
+	// err = aggregatorServer.GenericAPIServer.AddPostStartHook("ocm-controlplane-registration-controllers", func(context genericapiserver.PostStartHookContext) error {
+	// 	// Start controllers
+	// 	controllerConfig := rest.CopyConfig(aggregatorConfig.GenericConfig.LoopbackClientConfig)
+	// 	if err := controller.InstallOCMHubControllers(goContext(context), controllerConfig); err != nil {
+	// 		return err
+	// 	}
+	// 	klog.Infof("Finished bootstrapping ocm controllers")
+	// 	return nil
+	// })
+	// if err != nil {
+	// 	return nil, err
+	// }
+
+	// Start controllers
+	// controllerConfig := rest.CopyConfig(aggregatorConfig.GenericConfig.LoopbackClientConfig)
+	// if err := controller.InstallOCMHubControllers(context.TODO(), controllerConfig); err != nil {
+	// 	return nil, err
+	// }
+	// klog.Infof("Finished bootstrapping ocm controllers")
 
 	return aggregatorServer, nil
 }
