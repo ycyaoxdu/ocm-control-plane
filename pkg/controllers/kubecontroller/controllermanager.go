@@ -26,8 +26,8 @@ import (
 	"k8s.io/controller-manager/pkg/informerfactory"
 	"k8s.io/klog/v2"
 
-	"open-cluster-management.io/ocm-controlplane/pkg/kubecontroller/config"
-	"open-cluster-management.io/ocm-controlplane/pkg/kubecontroller/options"
+	"open-cluster-management.io/ocm-controlplane/pkg/controllers/kubecontroller/config"
+	"open-cluster-management.io/ocm-controlplane/pkg/controllers/kubecontroller/options"
 
 	kubectrlmgrconfig "k8s.io/kubernetes/pkg/controller/apis/config"
 )

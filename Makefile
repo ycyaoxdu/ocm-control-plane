@@ -9,7 +9,7 @@ run:
 
 build: 
 	$(shell if [ ! -e $(BINARYDIR) ];then mkdir -p $(BINARYDIR); fi)
-	go build -o bin/ocm-controlplane main.go 
+	go build -o bin/ocm-controlplane cmd/main.go 
 .PHONY: build
 
 clean:

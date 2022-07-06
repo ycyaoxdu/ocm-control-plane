@@ -11,8 +11,8 @@ import (
 	genericapiserver "k8s.io/apiserver/pkg/server"
 	"k8s.io/kubernetes/cmd/kube-apiserver/app/options"
 	netutils "k8s.io/utils/net"
+	"open-cluster-management.io/ocm-controlplane/pkg/apiserver/kubeapiserver"
 	"open-cluster-management.io/ocm-controlplane/pkg/etcd"
-	"open-cluster-management.io/ocm-controlplane/pkg/kubeapiserver"
 )
 
 const DefaultDirectory = ".ocmconfig"

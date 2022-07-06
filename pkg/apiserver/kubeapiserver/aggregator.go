@@ -40,8 +40,8 @@ import (
 
 	ocmcrds "open-cluster-management.io/ocm-controlplane/config/crds"
 	ocmresources "open-cluster-management.io/ocm-controlplane/config/hub"
-	"open-cluster-management.io/ocm-controlplane/pkg/controller"
-	"open-cluster-management.io/ocm-controlplane/pkg/kubecontroller"
+	"open-cluster-management.io/ocm-controlplane/pkg/controllers/kubecontroller"
+	"open-cluster-management.io/ocm-controlplane/pkg/controllers/ocmcontroller"
 )
 
 func createAggregatorConfig(
@@ -229,7 +229,7 @@ func createAggregatorServer(aggregatorConfig *aggregatorapiserver.Config, delega
 	err = aggregatorServer.GenericAPIServer.AddPostStartHook("ocm-controlplane-registration-controllers", func(context genericapiserver.PostStartHookContext) error {
 		// Start controllers
 		controllerConfig := rest.CopyConfig(aggregatorConfig.GenericConfig.LoopbackClientConfig)
-		if err := controller.InstallOCMHubControllers(goContext(context), controllerConfig); err != nil {
+		if err := ocmcontroller.InstallOCMHubControllers(goContext(context), controllerConfig); err != nil {
 			return err
 		}
 		klog.Infof("Finished bootstrapping ocm controllers")
@@ -238,13 +238,6 @@ func createAggregatorServer(aggregatorConfig *aggregatorapiserver.Config, delega
 	if err != nil {
 		return nil, err
 	}
-
-	// Start controllers
-	// controllerConfig := rest.CopyConfig(aggregatorConfig.GenericConfig.LoopbackClientConfig)
-	// if err := controller.InstallOCMHubControllers(context.TODO(), controllerConfig); err != nil {
-	// 	return nil, err
-	// }
-	// klog.Infof("Finished bootstrapping ocm controllers")
 
 	return aggregatorServer, nil
 }

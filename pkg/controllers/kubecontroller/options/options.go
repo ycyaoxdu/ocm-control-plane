@@ -17,7 +17,7 @@ import (
 	"k8s.io/kubernetes/pkg/controller/garbagecollector"
 	garbagecollectorconfig "k8s.io/kubernetes/pkg/controller/garbagecollector/config"
 
-	kubecontrollerconfig "open-cluster-management.io/ocm-controlplane/pkg/kubecontroller/config"
+	kubecontrollerconfig "open-cluster-management.io/ocm-controlplane/pkg/controllers/kubecontroller/config"
 
 	// add the kubernetes feature gates
 	_ "k8s.io/kubernetes/pkg/features"
