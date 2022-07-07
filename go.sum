@@ -646,6 +646,7 @@ github.com/openshift/build-machinery-go v0.0.0-20211213093930-7e33a7eb4ce3/go.mo
 github.com/openshift/client-go v0.0.0-20211209144617-7385dd6338e3/go.mod h1:cwhyki5lqBmrT0m8Im+9I7PGFaraOzcYPtEz93RcsGY=
 github.com/openshift/client-go v0.0.0-20220525160904-9e1acff93e4a h1:ylsEgoC8Dlg4A0C1TLH0A4x/TZao7k1YveLwROhRUdk=
 github.com/openshift/client-go v0.0.0-20220525160904-9e1acff93e4a/go.mod h1:eDO5QeVi2IiXmDwB0e2z1DpAznWroZKe978pzZwFBzg=
+github.com/openshift/generic-admission-server v1.14.1-0.20220220163846-6395b86cc87e h1:UV+3RAG4N4rXyRkj7k5zVGxtxJ+Kx2UQFdgSLrvZyCY=
 github.com/openshift/generic-admission-server v1.14.1-0.20220220163846-6395b86cc87e/go.mod h1:5/rCfYcRrdWdA2opnQDWfN6Hl0RxRdKdR/stSrsmBx4=
 github.com/openshift/library-go v0.0.0-20211222155012-624c91f4e514/go.mod h1:4UQ9snU1vg53fyTpHQw3vLPiAxI8ub5xrc+y8KPQQFs=
 github.com/openshift/library-go v0.0.0-20220622115547-84d884f4c9f6 h1:lmfmsIGq62lmj17qrZh4Gbbb86WvJw6pLhCNwNjB2Yk=

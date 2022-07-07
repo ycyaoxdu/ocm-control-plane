@@ -38,10 +38,15 @@ import (
 	"k8s.io/kubernetes/cmd/kube-apiserver/app/options"
 	"k8s.io/kubernetes/pkg/controlplane/controller/crdregistration"
 
+	genericadmissionserver "github.com/openshift/generic-admission-server/pkg/apiserver"
+
 	ocmcrds "open-cluster-management.io/ocm-controlplane/config/crds"
-	ocmresources "open-cluster-management.io/ocm-controlplane/config/hub"
+	ocmcontrollerresources "open-cluster-management.io/ocm-controlplane/config/hub"
+	ocmwebhookresources "open-cluster-management.io/ocm-controlplane/config/webhook"
 	"open-cluster-management.io/ocm-controlplane/pkg/controllers/kubecontroller"
 	"open-cluster-management.io/ocm-controlplane/pkg/controllers/ocmcontroller"
+	clusterwebhook "open-cluster-management.io/registration/pkg/webhook/cluster"
+	clustersetbindingwebhook "open-cluster-management.io/registration/pkg/webhook/clustersetbinding"
 )
 
 func createAggregatorConfig(
@@ -208,16 +213,28 @@ func createAggregatorServer(aggregatorConfig *aggregatorapiserver.Config, delega
 	// Add PostStartHook to install ocm hub resources
 	err = aggregatorServer.GenericAPIServer.AddPostStartHook("ocm-controlplane-registration-resource", func(context genericapiserver.PostStartHookContext) error {
 		// bootstrap ocm hub resources
-		if err := ocmresources.Bootstrap(
+		if err := ocmcontrollerresources.Bootstrap(
 			goContext(context),
 			apiextensionsClient.Discovery(),
 			dynamicClient,
 			kubeClient,
 		); err != nil {
-			klog.Errorf("failed to bootstrap ocm hub resources: %v", err)
+			klog.Errorf("failed to bootstrap ocm hub controller resources: %v", err)
 			// nolint:nilerr
 			return nil // don't klog.Fatal. This only happens when context is cancelled.
 		}
+
+		if err := ocmwebhookresources.Bootstrap(
+			goContext(context),
+			apiextensionsClient.Discovery(),
+			dynamicClient,
+			kubeClient,
+		); err != nil {
+			klog.Errorf("failed to bootstrap ocm hub webhook resources: %v", err)
+			// nolint:nilerr
+			return nil // don't klog.Fatal. This only happens when context is cancelled.
+		}
+
 		klog.Infof("Finished bootstrapping ocm hub resources")
 		return nil
 	})
@@ -238,6 +255,26 @@ func createAggregatorServer(aggregatorConfig *aggregatorapiserver.Config, delega
 	if err != nil {
 		return nil, err
 	}
+
+	// Start ocm webhooks
+	admissionhooks := []genericadmissionserver.AdmissionHook{
+		&clusterwebhook.ManagedClusterValidatingAdmissionHook{},
+		&clusterwebhook.ManagedClusterMutatingAdmissionHook{},
+		&clustersetbindingwebhook.ManagedClusterSetBindingValidatingAdmissionHook{},
+	}
+	for i := range admissionhooks {
+		admissionHook := admissionhooks[i]
+		postStartName := postStartHookName(admissionHook)
+		if len(postStartName) == 0 {
+			continue
+		}
+		aggregatorServer.GenericAPIServer.AddPostStartHookOrDie(postStartName,
+			func(context genericapiserver.PostStartHookContext) error {
+				return admissionHook.Initialize(aggregatorConfig.GenericConfig.LoopbackClientConfig, context.StopCh)
+			},
+		)
+	}
+	klog.Infof("Finished bootstrapping ocm webhooks")
 
 	return aggregatorServer, nil
 }
@@ -395,4 +432,20 @@ func goContext(parent genericapiserver.PostStartHookContext) context.Context {
 		cancel()
 	}(parent.StopCh)
 	return ctx
+}
+
+func postStartHookName(hook genericadmissionserver.AdmissionHook) string {
+	var ns []string
+	if mutatingHook, ok := hook.(genericadmissionserver.MutatingAdmissionHook); ok {
+		gvr, _ := mutatingHook.MutatingResource()
+		ns = append(ns, fmt.Sprintf("mutating-%s.%s.%s", gvr.Resource, gvr.Version, gvr.Group))
+	}
+	if validatingHook, ok := hook.(genericadmissionserver.ValidatingAdmissionHook); ok {
+		gvr, _ := validatingHook.ValidatingResource()
+		ns = append(ns, fmt.Sprintf("validating-%s.%s.%s", gvr.Resource, gvr.Version, gvr.Group))
+	}
+	if len(ns) == 0 {
+		return ""
+	}
+	return strings.Join(append(ns, "init"), "-")
 }

@@ -3,6 +3,7 @@ module open-cluster-management.io/ocm-controlplane
 go 1.17
 
 require (
+	github.com/openshift/generic-admission-server v1.14.1-0.20220220163846-6395b86cc87e
 	github.com/openshift/library-go v0.0.0-20220622115547-84d884f4c9f6
 	github.com/spf13/cobra v1.4.0
 	github.com/spf13/pflag v1.0.5
@@ -19,7 +20,6 @@ require (
 	k8s.io/utils v0.0.0-20220210201930-3a6ce19ff2f9
 	open-cluster-management.io/api v0.7.0 // indirect
 	open-cluster-management.io/registration v0.7.0
-
 )
 
 require (
