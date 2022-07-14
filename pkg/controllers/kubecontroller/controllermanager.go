@@ -177,6 +177,8 @@ func NewControllerInitializers() map[string]InitFunc {
 	controllers["csrsigning"] = startCSRSigningController
 	controllers["csrapproving"] = startCSRApprovingController
 	controllers["csrcleaner"] = startCSRCleanerController
+	controllers["bootstrapsigner"] = startBootstrapSignerController
+	controllers["tokencleaner"] = startTokenCleanerController
 
 	return controllers
 }
