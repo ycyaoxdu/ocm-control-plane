@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/rand"
 	"net/http"
+	"os"
 	"time"
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -19,6 +20,7 @@ import (
 	"k8s.io/client-go/metadata/metadatainformer"
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/restmapper"
+	certutil "k8s.io/client-go/util/cert"
 	"k8s.io/component-base/configz"
 	"k8s.io/controller-manager/controller"
 	"k8s.io/controller-manager/pkg/clientbuilder"
@@ -179,6 +181,7 @@ func NewControllerInitializers() map[string]InitFunc {
 	controllers["csrcleaner"] = startCSRCleanerController
 	controllers["bootstrapsigner"] = startBootstrapSignerController
 	controllers["tokencleaner"] = startTokenCleanerController
+	controllers["root-ca-cert-publisher"] = startRootCACertPublisher
 
 	return controllers
 }
@@ -302,6 +305,18 @@ func createClientBuilders(c *config.CompletedConfig) (clientBuilder clientbuilde
 	}
 	clientBuilder = rootClientBuilder
 	return
+}
+
+func readCA(file string) ([]byte, error) {
+	rootCA, err := os.ReadFile(file)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := certutil.ParseCertsPEM(rootCA); err != nil {
+		return nil, err
+	}
+
+	return rootCA, err
 }
 
 // ContextForChannel a copy of "k8s.io/apimachinery/pkg/util/wait".contextForChannel

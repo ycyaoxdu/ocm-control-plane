@@ -8,6 +8,7 @@ import (
 	"k8s.io/klog/v2"
 	"k8s.io/kubernetes/pkg/controller/certificates/approver"
 	"k8s.io/kubernetes/pkg/controller/certificates/cleaner"
+	"k8s.io/kubernetes/pkg/controller/certificates/rootcacertpublisher"
 	"k8s.io/kubernetes/pkg/controller/certificates/signer"
 	csrsigningconfig "k8s.io/kubernetes/pkg/controller/certificates/signer/config"
 )
@@ -143,5 +144,31 @@ func startCSRCleanerController(ctx context.Context, controllerContext Controller
 		controllerContext.InformerFactory.Certificates().V1().CertificateSigningRequests(),
 	)
 	go cleaner.Run(ctx, 1)
+	return nil, true, nil
+}
+
+func startRootCACertPublisher(ctx context.Context, controllerContext ControllerContext) (controller.Interface, bool, error) {
+	var (
+		rootCA []byte
+		err    error
+	)
+	if controllerContext.ComponentConfig.SAController.RootCAFile != "" {
+		if rootCA, err = readCA(controllerContext.ComponentConfig.SAController.RootCAFile); err != nil {
+			return nil, true, fmt.Errorf("error parsing root-ca-file at %s: %v", controllerContext.ComponentConfig.SAController.RootCAFile, err)
+		}
+	} else {
+		rootCA = controllerContext.ClientBuilder.ConfigOrDie("root-ca-cert-publisher").CAData
+	}
+
+	sac, err := rootcacertpublisher.NewPublisher(
+		controllerContext.InformerFactory.Core().V1().ConfigMaps(),
+		controllerContext.InformerFactory.Core().V1().Namespaces(),
+		controllerContext.ClientBuilder.ClientOrDie("root-ca-cert-publisher"),
+		rootCA,
+	)
+	if err != nil {
+		return nil, true, fmt.Errorf("error creating root CA certificate publisher: %v", err)
+	}
+	go sac.Run(ctx, 1)
 	return nil, true, nil
 }

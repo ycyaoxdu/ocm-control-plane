@@ -66,6 +66,8 @@ func (o *Options) Complete() (*CompletedOptions, error) {
 	if err != nil {
 		return nil, err
 	}
+	// Enable Bootstrap Token Authentication
+	s.ServerRunOptions.Authentication.BootstrapToken.Enable = true
 
 	// check for directory
 	if !filepath.IsAbs(o.Extra.RootDirectory) {
